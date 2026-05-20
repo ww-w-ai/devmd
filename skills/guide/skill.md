@@ -154,7 +154,13 @@ Each file has 3–5 key questions. Ask via AskUserQuestion. Questions are design
 
 ### 3. Generate the file
 
-Read the template from DevMD `templates/{FILE_NAME}`. Fill in the user's answers. Write the file.
+**MUST read the spec BEFORE generating.** Read `spec/{FILE_NAME}` from the DevMD plugin directory to understand:
+- REQUIRED frontmatter fields (types, constraints)
+- REQUIRED body sections (order, content rules)
+- Cross-reference requirements (SHOULD/MUST)
+- Validation rules (e.g., DESIGN.md colors must be #hex)
+
+Then read the template from DevMD `templates/{FILE_NAME}`. Fill in the user's answers, ensuring all REQUIRED fields and sections from the spec are present. Write the file.
 
 ### 4. Show and confirm
 

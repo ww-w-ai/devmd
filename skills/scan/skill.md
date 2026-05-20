@@ -195,7 +195,9 @@ Use these patterns to find relevant source files. The project language is {LANG}
 3a. For SCHEMA.md specifically: MUST read both ORM model files AND domain-layer enum/value-object files. When values differ between layers, use domain layer as authoritative and note the discrepancy.
 4. {If Phase 2+}: Read these already-generated DevMD files for cross-reference context:
    {LIST of Phase N-1 output file paths}
-5. Generate {FILE_NAME} following this schema:
+5. **MUST read the spec file BEFORE generating.** Read `spec/{FILE_NAME}` from the DevMD plugin directory. This is non-negotiable — generating without reading the spec produces non-compliant output.
+
+6. Generate {FILE_NAME} following the spec:
 
 ### Required Frontmatter Fields
 {Extracted from spec/{FILE_NAME} — REQUIRED fields only, with types}
