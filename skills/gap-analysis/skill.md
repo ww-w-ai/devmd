@@ -25,18 +25,41 @@ Compares DevMD specification files against actual source code.
 ## Arguments
 
 ```
-/devmd-gap-analysis                          # Analyze all DevMD files vs current directory
-/devmd-gap-analysis SCHEMA.md                # Single file analysis
-/devmd-gap-analysis SCHEMA.md --source ../myapp  # Explicit source path
+/devmd-gap-analysis                          # code→doc: what did the docs miss?
+/devmd-gap-analysis --reverse               # doc→code: what hasn't been implemented yet?
+/devmd-gap-analysis SCHEMA.md                # Single file (default direction: code→doc)
+/devmd-gap-analysis SCHEMA.md --reverse      # Single file, doc→code
+/devmd-gap-analysis --source ../myapp        # Explicit source path
 /devmd-gap-analysis --consistency-only       # Cross-file consistency check only (no source needed)
+```
+
+## Two Directions
+
+| Flag | Direction | Question | When to use |
+|------|-----------|----------|-------------|
+| (default) | **Code → Doc** | "Does the doc fully describe the code?" | After scan, after code changes, documentation audit |
+| `--reverse` | **Doc → Code** | "Has everything in the doc been implemented?" | After writing specs, during/after implementation, before release |
+
+```
+Code → Doc (default):
+  Code has 23 tables → SCHEMA.md documents 18 → 5 gaps → "docs are incomplete"
+
+Doc → Code (--reverse):
+  SCHEMA.md defines 23 tables → code has 18 → 5 gaps → "implementation is incomplete"
 ```
 
 ## When to Use (and When Not To)
 
-**Use:**
+**Use (code→doc):**
 - DevMD files were written manually or edited after scan — verify they still match code
 - Code changed since last scan — find what DevMD files are now stale
 - Reviewing someone else's DevMD files against the actual project
+
+**Use (doc→code, --reverse):**
+- After `/devmd-guide` or manual spec writing — check how much has been built
+- During implementation — track progress ("12/23 tables implemented")
+- Before release — verify all specified features exist in code
+- After `/pdca do` — confirm implementation matches the DevMD spec
 
 **Don't use:**
 - Immediately after `/devmd-scan` — that's self-grading. Scan has its own self-verification step.
@@ -64,20 +87,37 @@ Only analyze files that exist. Do not flag missing files as gaps — that's a ti
 
 For each DevMD file present, run the matching Count command from `skills/common/patterns.md` against the source code.
 
+### Direction determines what's a "gap"
+
+| Direction | Numerator | Denominator | A gap is... |
+|-----------|-----------|-------------|-------------|
+| code→doc (default) | doc_count | code_count | item in code but not in doc |
+| doc→code (--reverse) | code_count | doc_count | item in doc but not in code |
+
 ### Per-file counting
 
-For each file, produce:
+**Code → Doc (default):**
 
 ```
 FILE: SCHEMA.md
   code_count: 23        # tables/models found in source (deterministic grep)
-  doc_count: 18         # tables/models documented in SCHEMA.md (grep "^  - " or table rows)
+  doc_count: 18         # tables/models documented in SCHEMA.md
   coverage: 78%         # doc_count / code_count
-  missing_items:        # items in code but not in doc
+  missing_from_doc:     # items in code but not in doc
     - audit_log         (src/models/audit-log.ts:5)
     - session           (src/models/session.ts:3)
-    - migration_lock    (prisma/migrations/lock.ts:1)
-    ...
+```
+
+**Doc → Code (--reverse):**
+
+```
+FILE: SCHEMA.md
+  doc_count: 23         # tables/models defined in SCHEMA.md
+  code_count: 18        # tables/models found in source (deterministic grep)
+  implementation: 78%   # code_count / doc_count
+  not_yet_implemented:  # items in doc but not in code
+    - audit_log         (SCHEMA.md, frontmatter models.AuditLog)
+    - analytics_event   (SCHEMA.md, frontmatter models.AnalyticsEvent)
 ```
 
 ### Counting rules per file
@@ -104,9 +144,9 @@ These files describe qualitative concepts. Skip counting, handle in Phase 2.
 
 ## Phase 2: Evidence-Based Findings (LLM judgment, tagged)
 
-For each DevMD file (including non-countable ones), an Agent reviews:
+For each DevMD file (including non-countable ones), an Agent reviews.
 
-### Agent prompt
+### Agent prompt — Code → Doc (default)
 
 ```
 You are auditing {FILE_NAME} against source code for accuracy and completeness.
@@ -148,6 +188,72 @@ Return ONLY a JSON array. No markdown, no explanation.
 ]
 
 If no issues found, return [].
+Do NOT invent issues. If you're unsure, don't include it.
+```
+
+### Agent prompt — Doc → Code (--reverse)
+
+```
+You are checking whether {FILE_NAME} has been fully implemented in source code.
+
+## DevMD file content
+{READ the DevMD file}
+
+## Source files to check
+{List of relevant source files from Phase 0 recon + patterns.md Glob results}
+
+## Task
+
+For each item defined in the DevMD file, check if it exists in the source code.
+
+### A. Not implemented — item defined in doc but not found in code
+For each: quote the doc definition, show that Grep/Glob finds no matching implementation.
+
+### B. Partially implemented — item exists but is incomplete
+For each: quote the doc definition (full spec), quote the source code (partial), explain what's missing.
+
+### C. Diverged — item is implemented but differently from the doc
+For each: quote the doc spec, quote the source implementation, explain the difference.
+
+## What counts as "defined in the doc"
+
+- SCHEMA.md: every model/table and their fields
+- API.md: every endpoint
+- ARCHITECTURE.md: every package/layer
+- ERRORS.md: every error code
+- UI.md: every page/component
+- FLOWS.md: every user journey
+- SECURITY.md: every auth mechanism, every OWASP mitigation
+- TESTING.md: every test type/suite mentioned
+- CONFIG.md: every env var
+- INFRA.md: every infrastructure component
+- AGENTS.md: every agent/skill
+- HARNESS.md: every LLM/RAG/tool config
+- RUNTIME.md: every worker/cron/queue
+
+## Output format (strict)
+
+Return ONLY a JSON array. No markdown, no explanation.
+
+[
+  {
+    "type": "not_implemented|partial|diverged",
+    "severity": "high|medium|low",
+    "file": "{FILE_NAME}",
+    "doc_claim": "exact quote from DevMD file",
+    "source_file": "path/to/file.ts or null if not found",
+    "source_line": 42,
+    "source_snippet": "1-3 lines of code or null",
+    "description": "what's missing or different, in one sentence"
+  }
+]
+
+Severity guide:
+- high: core feature/table/endpoint not implemented at all
+- medium: implemented but missing fields/params/error handling
+- low: minor detail differs (naming, defaults)
+
+If everything is implemented, return [].
 Do NOT invent issues. If you're unsure, don't include it.
 ```
 
@@ -231,9 +337,12 @@ overall = deterministic_coverage × 0.4 + finding_score × 0.35 + consistency_sc
 
 Write report to `{devmd_path}/gap-analysis.md`:
 
-```markdown
-# DevMD Gap Analysis Report
+### Code → Doc report (default)
 
+```markdown
+# DevMD Gap Analysis — Code → Doc
+
+**Direction**: Code → Doc (are docs complete?)
 **Source**: {source_path}
 **Date**: {ISO date}
 **Overall Score**: {N}/100
@@ -248,41 +357,64 @@ Write report to `{devmd_path}/gap-analysis.md`:
 
 ## Deterministic Coverage
 
-| File | In Code | In Doc | Coverage | Missing |
-|------|---------|--------|----------|---------|
-| SCHEMA.md | 23 | 18 | 78% | audit_log, session, migration_lock, ... |
-| API.md | 45 | 42 | 93% | POST /webhooks, DELETE /tokens |
-| ... | | | | |
+| File | In Code | In Doc | Coverage | Missing from Doc |
+|------|---------|--------|----------|-----------------|
+| SCHEMA.md | 23 | 18 | 78% | audit_log, session, ... |
+| API.md | 45 | 42 | 93% | POST /webhooks, ... |
 
 ## Verified Findings
-
-### High Severity
-
-#### ARCHITECTURE.md — incorrect package count
-- **Doc claim**: "monorepo with 8 packages"
-- **Source**: `packages/` contains 12 directories with package.json
-- **Evidence**: `find packages -maxdepth 1 -name "package.json" | wc -l` → 12
-
-### Medium Severity
-...
-
-### Low Severity
-...
+{findings grouped by severity with evidence}
 
 ## Consistency Issues
-
-### Broken Cross-References
-- FLOWS.md:34 references `@UI.md#checkout-page` — section "checkout-page" not found in UI.md
-
-### Contradictions
-- GLOSSARY.md defines "Recipient" with 5 roles; SCHEMA.md:78 defines enum with 4 values
-  - GLOSSARY.md:12: "Recipient can be: sender, signer, cc, viewer, approver"
-  - SCHEMA.md:78: "role: enum(sender|signer|cc|viewer)"
+{cross-references + contradictions}
 
 ## Recommendations (ordered by impact)
+1. ...
+```
 
-1. {Fix with highest coverage/accuracy improvement}
-2. ...
+### Doc → Code report (--reverse)
+
+```markdown
+# DevMD Gap Analysis — Doc → Code
+
+**Direction**: Doc → Code (is the spec implemented?)
+**Source**: {source_path}
+**Date**: {ISO date}
+**Implementation Score**: {N}/100
+
+## Implementation Progress
+
+| File | Specified | Implemented | Progress | Not Yet Implemented |
+|------|-----------|-------------|----------|---------------------|
+| SCHEMA.md | 23 | 18 | 78% | audit_log, analytics_event, ... |
+| API.md | 45 | 38 | 84% | DELETE /tokens, PATCH /billing, ... |
+
+## Not Implemented (High Severity)
+
+#### SCHEMA.md — audit_log table
+- **Spec**: SCHEMA.md defines `AuditLog` with 8 fields (user_id, action, target_type, ...)
+- **Code**: No file matching `*audit*model*` or `*audit*entity*` found
+- **Impact**: Audit trail feature entirely missing
+
+## Partially Implemented
+
+#### API.md — PATCH /users/:id
+- **Spec**: API.md defines 6 updatable fields (name, email, avatar, timezone, language, theme)
+- **Code**: `src/routes/users.ts:45` handles only 3 fields (name, email, avatar)
+- **Missing**: timezone, language, theme not in update handler
+
+## Diverged from Spec
+
+#### ERRORS.md — AUTH_003 code
+- **Spec**: ERRORS.md defines AUTH_003 as "MFA_REQUIRED" (403)
+- **Code**: `src/errors/auth.ts:12` defines AUTH_003 as "SESSION_EXPIRED" (401)
+
+## Summary
+
+- **Fully implemented**: {N} files at 100%
+- **In progress**: {N} files with gaps
+- **Not started**: {N} files with 0% implementation
+- **Next priority**: {highest-impact unimplemented item}
 ```
 
 ## Single-File Mode
