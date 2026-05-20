@@ -58,7 +58,32 @@ Which tier fits your project?
 | Enterprise (25) | + DEVOPS, OPERATIONS, CHANGELOG, remaining | Full teams at scale |
 ```
 
-### 0c. Create output directory
+### 0c. File selection (filter)
+
+Tier gives a starting list, but not every file is needed for every project. After tier selection, present the full file list with per-file relevance hints based on project characteristics, and let the user deselect files that don't apply.
+
+**Relevance hints** (auto-detect from Step 0a/0b context + ask if unclear):
+
+| Signal | Files to question |
+|--------|------------------|
+| Internal tool / no public traffic | SEO — likely skip |
+| No AI agent orchestration (just LLM API calls) | AGENTS, HARNESS, LIFECYCLE — likely skip |
+| Solo dev / small team, no on-call | OPERATIONS — likely skip |
+| No CI/CD pipeline yet / simple deploy | DEVOPS — likely skip |
+| Greenfield project (no changelog yet) | CHANGELOG — likely skip |
+| Background jobs described in FLOWS | RUNTIME — may be redundant |
+
+**Process:**
+
+1. Show the tier's full file list as a table: `| File | Wave | Purpose (one line) | Recommended? |`
+2. Mark each file as ✓ Recommended or ? Review based on the signals above.
+3. Ask via AskUserQuestion (multiSelect): "Which files should we skip? (deselect = skip)"
+4. Store the final selected list. Only these files are generated in subsequent waves.
+5. Skipped files are noted in the Post-Completion summary.
+
+If the user specifies `--all`, skip this step and generate every file in the tier.
+
+### 0d. Create output directory
 
 Files are written to the current directory (project root). Read the corresponding template from the DevMD plugin's `templates/` directory for each file.
 

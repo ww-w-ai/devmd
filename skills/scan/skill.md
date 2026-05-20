@@ -82,7 +82,32 @@ Has DB (migrations/ORM) + API (routes) + auth?        → App (16)
 Otherwise                                             → Starter (8)
 ```
 
-### 0f. Compile recon summary
+### 0f. File selection (filter)
+
+Tier gives a starting list, but not every file is needed for every project. After tier detection, present the full file list with per-file relevance hints and let the user deselect files that don't apply.
+
+**Relevance hints** (auto-detect from recon context):
+
+| Signal | Files to question |
+|--------|------------------|
+| Internal tool / no public traffic | SEO — likely skip |
+| No AI agent orchestration (just LLM API calls) | AGENTS, HARNESS, LIFECYCLE — likely skip |
+| Solo dev / small team, no on-call | OPERATIONS — likely skip |
+| No CI/CD pipeline yet / simple deploy | DEVOPS — likely skip |
+| Greenfield project (no changelog yet) | CHANGELOG — likely skip |
+| Background jobs described in FLOWS | RUNTIME — may be redundant |
+
+**Process:**
+
+1. Show the tier's full file list as a table: `| File | Phase | Purpose (one line) | Recommended? |`
+2. Mark each file as ✓ Recommended or ? Review based on the signals above.
+3. Ask via AskUserQuestion (multiSelect): "Which files should we skip? (deselect = skip)"
+4. Store the final selected list. Only these files are generated in subsequent phases.
+5. Skipped files are noted in the Post-Scan Summary.
+
+If invoked with specific file names (`/devmd-scan SCHEMA.md,API.md`) or `--all`, skip this step.
+
+### 0g. Compile recon summary
 
 Store as a text block (do NOT write to file). This summary is passed to every Agent prompt in subsequent phases.
 
