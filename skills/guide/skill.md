@@ -302,9 +302,48 @@ When invoked as `/devmd-guide SCHEMA.md`:
 2. Ask only SCHEMA.md questions
 3. Write only SCHEMA.md
 
+## Post-Wave Spec Compliance Check
+
+After ALL waves are complete (or after each wave if `--strict` flag is set), run a spec compliance check on every generated file:
+
+### Process
+
+1. For each generated file, read the corresponding spec from the DevMD plugin's `spec/{FILE_NAME}` directory.
+2. Validate:
+   a. **REQUIRED frontmatter fields**: every field marked REQUIRED in the spec exists and has a value of the correct type
+   b. **REQUIRED body sections**: every section marked REQUIRED in the spec exists and has content (not empty)
+   c. **Cross-references**: every `@FILE.md` reference marked SHOULD or MUST in the spec is present
+   d. **Validation rules**: any spec-specific rules (e.g., DESIGN.md colors must be `#hex`, PRODUCT.md tagline max 120 chars)
+3. Report as a compliance table:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Spec Compliance Check — {N} files
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+| File | Frontmatter | Sections | Cross-refs | Status |
+|------|-------------|----------|------------|--------|
+| PRODUCT.md | 6/6 ✓ | 5/5 ✓ | 2/3 | PASS |
+| DESIGN.md | 2/5 ✗ | 1/2 ✗ | 0/3 | FAIL |
+...
+
+FAIL: {N} files need fixes. Fix now? (Y/n)
+```
+
+4. If any file FAILs:
+   - Re-read the spec
+   - Read the generated file
+   - Add missing REQUIRED fields/sections
+   - Do NOT remove existing content — only add what's missing
+5. Re-run the check until all files PASS.
+
+### Why this step exists
+
+Agent-generated files frequently miss spec-mandated structure (frontmatter maps, required sections, cross-references) even when the spec is available. This check catches gaps before the developer starts building from these docs.
+
 ## Post-Completion
 
-After all files in the tier are written:
+After all files pass spec compliance:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -312,6 +351,7 @@ DevMD Complete — {tier} tier ({N} files)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Written: {list of files}
+Spec compliance: {N}/{N} PASS
 
 What's next:
   /devmd-gap-analysis --consistency-only   → check for conflicts between files

@@ -236,9 +236,19 @@ When invoked as `/devmd-scan SCHEMA.md`:
 3. Skip phase ordering — run immediately (but still read existing DevMD files if present for cross-refs)
 4. Run self-verification on the single file
 
+## Post-Scan Spec Compliance Check
+
+After all files are generated, run spec compliance on each:
+
+1. For each generated file, read `spec/{FILE_NAME}` from the DevMD plugin.
+2. Validate: REQUIRED frontmatter fields, REQUIRED body sections, cross-references, spec-specific rules.
+3. Report compliance table (same format as guide skill).
+4. Auto-fix FAIL files: re-read spec, add missing REQUIRED fields/sections without removing content.
+5. Re-run until all PASS.
+
 ## Post-Scan Summary
 
-After all files are generated, output exactly:
+After all files pass spec compliance, output exactly:
 
 ```
 DevMD Scan Complete
@@ -249,6 +259,7 @@ DevMD Scan Complete
   Generated: {N} files
   Preserved: {N} existing files (use --overwrite to regenerate)
   Skipped: {N} files (no relevant source found)
+  Spec compliance: {N}/{N} PASS
 
 Next: run /devmd-gap-analysis to verify against source code
 ```
