@@ -229,11 +229,35 @@ You don't need all 25 files. Pick a tier:
 
 ## Getting Started
 
+### Install the plugin
+
 ```bash
-# Coming soon
-npx devmd init          # Interactive setup — pick your tier
-npx devmd scan          # Auto-generate from existing codebase
-npx devmd check         # Detect conflicts between files
+claude plugin install devmd@ww-w-ai
+```
+
+### New project — write specs from scratch
+
+```
+/devmd-guide              # Interactive walkthrough — pick tier, answer questions, generate files
+/devmd-guide app          # Start with App tier (16 files)
+/devmd-guide SCHEMA.md    # Write a single file
+```
+
+The guide walks you through 7 waves in dependency order, asking 3–5 questions per file. You answer, AI writes the spec.
+
+### Existing project — auto-generate from code
+
+```
+/devmd-scan               # Analyze codebase, generate all files for detected tier
+/devmd-scan SCHEMA.md     # Generate a single file
+```
+
+### Verify specs against source
+
+```
+/devmd-gap-analysis                   # Full coverage + accuracy + consistency check
+/devmd-gap-analysis SCHEMA.md         # Single file
+/devmd-gap-analysis --consistency-only # Cross-file conflict detection only
 ```
 
 ## Examples
