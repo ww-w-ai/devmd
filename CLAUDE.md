@@ -185,13 +185,49 @@ DESIGN.md를 기존 사이트에서 자동 추출하는 도구:
 - `10_프로젝트 기획/ww-w-stack-brainstorming/` — @ww-w/stack brainstorming + plan
 - `50_노트/회사-법인-회계/미션-비전.md` — 회사 미션 "Do it once, share with all"
 
+## 완료된 것 (2026-05-13)
+
+1. ~~templates/ 디렉토리에 빈 템플릿 생성~~ → **25개 완성** (1,729줄)
+2. ~~spec/ 디렉토리에 규격 문서 작성~~ → **26개 완성** (2,388줄, RFC 2119)
+3. ~~실전 예시 작성~~ → **Twenty CRM (44K stars) + Documenso (9K stars)** 각 25개 파일
+4. ~~gap 분석~~ → **106개 gap 발견, 25개로 93% 해소 증명** (docs/gap-analysis.md)
+5. ~~README 작성~~ → Product Hunt급, Why 25 실증 근거 포함
+6. ~~HARNESS.md 설계~~ → noul/seochi/madori 분석 기반 13개 섹션
+7. ~~DESIGN.md 생태계 조사~~ → 배포 모델, 채택 경로, 도구 현황 파악
+
+## 현재 프로젝트 구조
+
+```
+devmd/
+├── README.md                           ← 소개 + Why 25 + 티어
+├── CLAUDE.md                           ← 이 파일
+├── docs/gap-analysis.md                ← 106개 gap 실증 분석
+├── spec/ (26개, 2,388줄)               ← 정규 규격 (RFC 2119)
+├── templates/ (25개, 1,729줄)          ← 빈 골격
+├── examples/documenso/ (25개, 6,369줄) ← 실전 예시
+└── examples/twenty/ (25개, 8,294줄)    ← 실전 예시
+                             104 파일, ~19,400줄
+```
+
+## 25개 표준 파일 (17개 → 25개 확장)
+
+기존 17개 + FLOWS.md, SCREENS.md, HARNESS.md, LIFECYCLE.md, CONFIG.md, DEVOPS.md, OPERATIONS.md, CHANGELOG.md
+
+업계 최초 제안 6개: UI.md, SEO.md, INFRA.md, HARNESS.md, LIFECYCLE.md, RUNTIME.md
+
 ## 다음 단계
 
 1. **이 CLAUDE.md를 읽고 맥락 파악** ← 새 세션 시작 시 여기부터
-2. **wiki 상세 문서 읽기** — 위 참조 경로의 문서들을 필요할 때 읽기
-3. **templates/ 디렉토리에 17개 빈 템플릿 생성** — YAML frontmatter 구조 + 섹션 가이드
-4. **spec/ 디렉토리에 각 .md 파일의 규격 문서 작성** — 표준 스펙 정의
-5. **examples/top-ai-influencers/에 실제 예시 작성** — 첫 검증
-6. **devmd.ai 웹사이트 구축** — 규격 소개 + 템플릿 다운로드 + 예시
-7. **GitHub 공개** — 오픈소스로 커뮤니티 피드백
-8. **CLI 개발** — `npx devmd init` → 대화형 템플릿 생성
+2. **GitHub 공개** — github.com/ww-w-ai/devmd에 push
+3. **devmd.ai 웹사이트 구축** — 규격 소개 + 템플릿 다운로드 + 예시
+4. **콜드스타트 테스트** — noul 소스코드만으로 DevMD 자동 생성 → `npx devmd scan` feasibility 검증
+5. **awesome-devmd 큐레이션** — 커뮤니티 예시 수집 (DESIGN.md는 큐레이션이 spec의 6배 인기)
+
+## 백로그
+
+- **🔥 DESIGN.md → Theme Pipeline (Killer Feature)** — DESIGN.md frontmatter(colors, typography, spacing) 파싱 → CSS custom properties 자동 생성 → Tailwind v4 @theme 주입 → UI 동적 반영. "DESIGN.md 교체 = UI 테마 교체". 테스트베드: thessen-ai-ws. 목표: `npx devmd theme-gen` CLI + guide/scan 통합.
+- **CLI 개발** — `npx devmd init` (대화형 템플릿), `npx devmd scan` (코드→DevMD 자동생성), `npx devmd lint` (스펙 검증), `npx devmd check` (파일 간 충돌 감지), `npx devmd export` (DevMD→코드 생성), `npx devmd diff` (버전 비교), `npx devmd theme-gen` (DESIGN.md→CSS)
+- **npm 패키지** — @devmd/cli 또는 devmd
+- **VS Code 확장** — DevMD 파일 자동완성, 크로스 레퍼런스 네비게이션
+- **Chrome 확장** — 기존 사이트에서 DevMD 추출 (DESIGN.md Chrome 확장 참고)
+- **Figma 플러그인** — DESIGN.md + UI.md + SCREENS.md 연동
